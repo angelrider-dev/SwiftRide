@@ -1,11 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/colors.dart';
-
-// import 'rider_profile_screen.dart';
 import '../widgets/rider_drawer.dart';
+import 'rider_profile_screen.dart';
 
-class EarningsScreen extends StatelessWidget {
+class EarningsScreen extends StatefulWidget {
   const EarningsScreen({super.key});
+
+  @override
+  State<EarningsScreen> createState() => _EarningsScreenState();
+}
+
+class _EarningsScreenState extends State<EarningsScreen> {
+  int _totalRides = 0;
+  double _totalEarnings = 0;
+  double _todayEarnings = 0;
+  int _todayRides = 0;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _recentRides = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEarnings();
+  }
+
+  Future<void> _loadEarnings() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('rides')
+          .where('riderId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'completed')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      double total = 0;
+      double today = 0;
+      int todayCount = 0;
+      List<Map<String, dynamic>> rides = [];
+
+      final now = DateTime.now();
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final fare = (data['fare'] ?? 0).toDouble();
+        total += fare;
+
+        final createdAt = data['createdAt']?.toDate();
+        if (createdAt != null &&
+            createdAt.day == now.day &&
+            createdAt.month == now.month &&
+            createdAt.year == now.year) {
+          today += fare;
+          todayCount++;
+        }
+
+        rides.add(data);
+      }
+
+      setState(() {
+        _totalEarnings = total;
+        _totalRides = snapshot.docs.length;
+        _todayEarnings = today;
+        _todayRides = todayCount;
+        _recentRides = rides.take(10).toList();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,10 +78,7 @@ class EarningsScreen extends StatelessWidget {
       drawer: const RiderDrawer(currentScreen: 'earnings'),
       appBar: AppBar(
         backgroundColor: primaryBlue,
-        title: const Text(
-          'My Earnings',
-          style: TextStyle(color: whiteColor),
-        ),
+        title: const Text('My Earnings', style: TextStyle(color: whiteColor)),
         centerTitle: true,
         elevation: 0,
         leading: Builder(
@@ -33,125 +94,123 @@ class EarningsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Total Earnings Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryBlue, lightBlue],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryBlue.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: const Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Total Earnings',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  // Total Earnings Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [primaryBlue, lightBlue],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryBlue.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total Earnings',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'PKR ${_totalEarnings.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            color: whiteColor,
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$_totalRides total rides completed',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'PKR 24,500',
+                  const SizedBox(height: 20),
+
+                  // Stats Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          'Today',
+                          'PKR ${_todayEarnings.toStringAsFixed(0)}',
+                          '$_todayRides rides',
+                          Icons.today,
+                          Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          'Total Rides',
+                          '$_totalRides',
+                          'completed',
+                          Icons.directions_car,
+                          accentOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Recent Transactions
+                  const Text(
+                    'Recent Transactions',
                     style: TextStyle(
-                      color: whiteColor,
-                      fontSize: 36,
+                      color: primaryBlue,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '142 total rides completed',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
+                  const SizedBox(height: 12),
+
+                  _recentRides.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Column(
+                              children: [
+                                Icon(Icons.history, color: greyColor, size: 60),
+                                SizedBox(height: 12),
+                                Text(
+                                  'No completed rides yet!',
+                                  style: TextStyle(color: greyColor, fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: _recentRides.map((ride) {
+                            return _buildTransaction(
+                              '${ride['pickup']} → ${ride['dropoff']}',
+                              ride['rideType'] ?? 'Car',
+                              'PKR ${ride['fare'] ?? 0}',
+                            );
+                          }).toList(),
+                        ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Stats Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Today',
-                    'PKR 1,200',
-                    '4 rides',
-                    Icons.today,
-                    Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'This Week',
-                    'PKR 8,400',
-                    '28 rides',
-                    Icons.date_range,
-                    accentOrange,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'This Month',
-                    'PKR 32,000',
-                    '110 rides',
-                    Icons.calendar_month,
-                    primaryBlue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'Avg per Ride',
-                    'PKR 285',
-                    'per trip',
-                    Icons.trending_up,
-                    Colors.purple,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Recent Transactions
-            const Text(
-              'Recent Transactions',
-              style: TextStyle(
-                color: primaryBlue,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildTransaction('Gulberg → DHA Phase 5', 'Today, 2:30 PM', 'PKR 350'),
-            _buildTransaction('Johar Town → Liberty', 'Today, 11:00 AM', 'PKR 220'),
-            _buildTransaction('Model Town → Airport', 'Yesterday, 6:00 AM', 'PKR 850'),
-            _buildTransaction('Cantt → Packages Mall', 'Yesterday, 3:00 PM', 'PKR 280'),
-            _buildTransaction('Bahria Town → Anarkali', 'May 3, 10:00 AM', 'PKR 600'),
-            _buildTransaction('Wapda Town → Emporium', 'May 2, 5:00 PM', 'PKR 310'),
-          ],
-        ),
-      ),
     );
   }
 
@@ -182,10 +241,7 @@ class EarningsScreen extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(color: greyColor, fontSize: 12),
-              ),
+              Text(title, style: const TextStyle(color: greyColor, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 8),
@@ -197,16 +253,13 @@ class EarningsScreen extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          Text(
-            subtitle,
-            style: const TextStyle(color: greyColor, fontSize: 11),
-          ),
+          Text(subtitle, style: const TextStyle(color: greyColor, fontSize: 11)),
         ],
       ),
     );
   }
 
-  Widget _buildTransaction(String route, String time, String amount) {
+  Widget _buildTransaction(String route, String type, String amount) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -243,9 +296,11 @@ class EarningsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  time,
+                  type,
                   style: const TextStyle(color: greyColor, fontSize: 12),
                 ),
               ],
@@ -263,5 +318,4 @@ class EarningsScreen extends StatelessWidget {
       ),
     );
   }
-
 }

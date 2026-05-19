@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/colors.dart';
 import 'login_screen.dart';
 import 'passenger_home_screen.dart';
@@ -15,17 +17,182 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordVisible = false;
   bool _isRider = false;
-  @override
-void initState() {
-  super.initState();
-  _isRider = widget.isRider;
-}
+  bool _isLoading = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _vehicleController = TextEditingController();
   final TextEditingController _plateController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _isRider = widget.isRider;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _vehicleController.dispose();
+    _plateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signup() async {
+    // Validation
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter your name!');
+      return;
+    }
+    if (_usernameController.text.trim().isEmpty) {
+      _showError('Please enter a username!');
+      return;
+    }
+    if (_emailController.text.trim().isEmpty) {
+      _showError('Please enter your email!');
+      return;
+    }
+    if (_phoneController.text.trim().isEmpty) {
+      _showError('Please enter your phone number!');
+      return;
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      _showError('Please enter your password!');
+      return;
+    }
+    if (_passwordController.text.trim().length < 6) {
+      _showError('Password must be at least 6 characters!');
+      return;
+    }
+    if (_isRider && _vehicleController.text.trim().isEmpty) {
+      _showError('Please enter your vehicle name!');
+      return;
+    }
+    if (_isRider && _plateController.text.trim().isEmpty) {
+      _showError('Please enter your plate number!');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Check if username already exists
+      final usernameCheck = await _firestore
+          .collection('users')
+          .where(
+            'username',
+            isEqualTo: _usernameController.text.trim().toLowerCase(),
+          )
+          .get();
+
+      if (usernameCheck.docs.isNotEmpty) {
+        _showError('Username already taken! Try another one.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Create user in Firebase Auth
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Save user data in Firestore
+      Map<String, dynamic> userData = {
+        'name': _nameController.text.trim(),
+        'username': _usernameController.text.trim().toLowerCase(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'role': _isRider ? 'rider' : 'passenger',
+        'roles': _isRider ? ['rider'] : ['passenger'], // ← yeh add karo
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      if (_isRider) {
+        userData['vehicle'] = _vehicleController.text.trim();
+        userData['plateNumber'] = _plateController.text.trim();
+      }
+
+      await _firestore
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set(userData);
+
+      if (!mounted) return;
+
+      _showSuccess('Account created successfully!');
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+
+      if (_isRider) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const RiderHomeScreen()),
+          (route) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const PassengerHomeScreen()),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'weak-password':
+          message = 'Password must be at least 6 characters!';
+          break;
+        case 'email-already-in-use':
+          message = 'This email is already registered!';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email format!';
+          break;
+        case 'network-request-failed':
+          message = 'No internet connection!';
+          break;
+        default:
+          message = 'Signup failed: ${e.message}';
+      }
+      _showError(message);
+    } catch (e) {
+      _showError('Error: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +220,27 @@ void initState() {
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+
+          // Back Button
+          Positioned(
+            top: 40,
+            left: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: whiteColor,
+                  size: 24,
+                ),
               ),
             ),
           ),
@@ -100,7 +288,11 @@ void initState() {
                                 ),
                               ],
                             ),
-                            child: const Icon(Icons.directions_car, color: whiteColor, size: 40),
+                            child: const Icon(
+                              Icons.directions_car,
+                              color: whiteColor,
+                              size: 40,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           const Text(
@@ -134,10 +326,14 @@ void initState() {
                             child: GestureDetector(
                               onTap: () => setState(() => _isRider = false),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: !_isRider
-                                      ? const LinearGradient(colors: [primaryBlue, lightBlue])
+                                      ? const LinearGradient(
+                                          colors: [primaryBlue, lightBlue],
+                                        )
                                       : null,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -157,10 +353,14 @@ void initState() {
                             child: GestureDetector(
                               onTap: () => setState(() => _isRider = true),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: _isRider
-                                      ? const LinearGradient(colors: [primaryBlue, lightBlue])
+                                      ? const LinearGradient(
+                                          colors: [primaryBlue, lightBlue],
+                                        )
                                       : null,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -190,6 +390,15 @@ void initState() {
                     ),
                     const SizedBox(height: 16),
 
+                    // Username Field
+                    _buildLabel('Username'),
+                    _buildTextField(
+                      controller: _usernameController,
+                      hint: 'Choose a username e.g. john123',
+                      icon: Icons.alternate_email,
+                    ),
+                    const SizedBox(height: 16),
+
                     // Email Field
                     _buildLabel('Email'),
                     _buildTextField(
@@ -216,15 +425,22 @@ void initState() {
                       controller: _passwordController,
                       obscureText: !_isPasswordVisible,
                       decoration: InputDecoration(
-                        hintText: 'Enter your password',
+                        hintText: 'Enter your password (min 6 chars)',
                         hintStyle: const TextStyle(color: greyColor),
-                        prefixIcon: const Icon(Icons.lock_outlined, color: primaryBlue),
+                        prefixIcon: const Icon(
+                          Icons.lock_outlined,
+                          color: primaryBlue,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            _isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: primaryBlue,
                           ),
-                          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                          onPressed: () => setState(
+                            () => _isPasswordVisible = !_isPasswordVisible,
+                          ),
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade50,
@@ -238,7 +454,10 @@ void initState() {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: primaryBlue, width: 2),
+                          borderSide: const BorderSide(
+                            color: primaryBlue,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
@@ -267,21 +486,7 @@ void initState() {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_isRider) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const RiderHomeScreen()),
-                              (route) => false,
-                            );
-                          } else {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const PassengerHomeScreen()),
-                              (route) => false,
-                            );
-                          }
-                        },
+                        onPressed: _isLoading ? null : _signup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentOrange,
                           shape: RoundedRectangleBorder(
@@ -289,15 +494,17 @@ void initState() {
                           ),
                           elevation: 4,
                         ),
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: whiteColor)
+                            : const Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  color: whiteColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -319,12 +526,18 @@ void initState() {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Already have an account? ', style: TextStyle(color: greyColor)),
+                        const Text(
+                          'Already have an account? ',
+                          style: TextStyle(color: greyColor),
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    LoginScreen(isRider: _isRider),
+                              ),
                             );
                           },
                           child: const Text(

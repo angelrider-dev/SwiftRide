@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/colors.dart';
-// import 'rider_home_screen.dart';
-// import 'rider_profile_screen.dart';
-// import 'earnings_screen.dart';
 import '../widgets/rider_drawer.dart';
 
 class RideRequestScreen extends StatelessWidget {
-  const RideRequestScreen({super.key});
+  final String rideId;
+  final Map<String, dynamic> rideData;
+
+  const RideRequestScreen({
+    super.key,
+    required this.rideId,
+    required this.rideData,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-     drawer: const RiderDrawer(currentScreen: 'home'),
+      drawer: const RiderDrawer(currentScreen: 'home'),
       appBar: AppBar(
         backgroundColor: primaryBlue,
-        title: const Text(
-          'Ride Request',
-          style: TextStyle(color: whiteColor),
-        ),
+        title: const Text('Ride Request', style: TextStyle(color: whiteColor)),
         centerTitle: true,
         elevation: 0,
         leading: Builder(
@@ -29,7 +32,7 @@ class RideRequestScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: whiteColor),
+            icon: const Icon(Icons.arrow_back_ios, color: whiteColor),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -62,14 +65,18 @@ class RideRequestScreen extends StatelessWidget {
                       color: primaryBlue,
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    child: const Icon(Icons.person, color: whiteColor, size: 35),
+                    child: const Icon(
+                      Icons.person,
+                      color: whiteColor,
+                      size: 35,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'John Doe',
+                        'Passenger',
                         style: TextStyle(
                           color: primaryBlue,
                           fontSize: 18,
@@ -79,21 +86,24 @@ class RideRequestScreen extends StatelessWidget {
                       Row(
                         children: [
                           Icon(Icons.star, color: accentOrange, size: 16),
-                          Text(' 4.8', style: TextStyle(color: greyColor)),
+                          Text(' 5.0', style: TextStyle(color: greyColor)),
                         ],
                       ),
                     ],
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: primaryBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'PKR 350',
-                      style: TextStyle(
+                    child: Text(
+                      'PKR ${rideData['fare'] ?? 0}',
+                      style: const TextStyle(
                         color: primaryBlue,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -122,17 +132,20 @@ class RideRequestScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.circle, color: Colors.green, size: 14),
-                      SizedBox(width: 12),
+                      const Icon(Icons.circle, color: Colors.green, size: 14),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Pickup', style: TextStyle(color: greyColor, fontSize: 12)),
+                          const Text(
+                            'Pickup',
+                            style: TextStyle(color: greyColor, fontSize: 12),
+                          ),
                           Text(
-                            'Gulberg, Lahore',
-                            style: TextStyle(
+                            rideData['pickup'] ?? '',
+                            style: const TextStyle(
                               color: primaryBlue,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -149,17 +162,24 @@ class RideRequestScreen extends StatelessWidget {
                     width: 2,
                     color: greyColor,
                   ),
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.location_on, color: accentOrange, size: 14),
-                      SizedBox(width: 12),
+                      const Icon(
+                        Icons.location_on,
+                        color: accentOrange,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Dropoff', style: TextStyle(color: greyColor, fontSize: 12)),
+                          const Text(
+                            'Dropoff',
+                            style: TextStyle(color: greyColor, fontSize: 12),
+                          ),
                           Text(
-                            'DHA Phase 5',
-                            style: TextStyle(
+                            rideData['dropoff'] ?? '',
+                            style: const TextStyle(
                               color: primaryBlue,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -174,7 +194,7 @@ class RideRequestScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Distance & Time
+            // Ride Type & Fare
             Row(
               children: [
                 Expanded(
@@ -190,12 +210,26 @@ class RideRequestScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.route, color: primaryBlue, size: 28),
-                        SizedBox(height: 4),
-                        Text('5.2 km', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Distance', style: TextStyle(color: greyColor, fontSize: 12)),
+                        const Icon(
+                          Icons.directions_car,
+                          color: primaryBlue,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          rideData['rideType'] ?? 'Car',
+                          style: const TextStyle(
+                            color: primaryBlue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Text(
+                          'Ride Type',
+                          style: TextStyle(color: greyColor, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -214,18 +248,33 @@ class RideRequestScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.access_time, color: primaryBlue, size: 28),
-                        SizedBox(height: 4),
-                        Text('12 min', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Est. Time', style: TextStyle(color: greyColor, fontSize: 12)),
+                        const Icon(
+                          Icons.attach_money,
+                          color: primaryBlue,
+                          size: 28,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'PKR ${rideData['fare'] ?? 0}',
+                          style: const TextStyle(
+                            color: primaryBlue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Text(
+                          'Fare',
+                          style: TextStyle(color: greyColor, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
+
             const Spacer(),
 
             // Accept & Reject Buttons
@@ -235,7 +284,22 @@ class RideRequestScreen extends StatelessWidget {
                   child: SizedBox(
                     height: 55,
                     child: ElevatedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FirebaseFirestore.instance
+                            .collection('rides')
+                            .doc(rideId)
+                            .update({'status': 'cancelled'});
+                        await FirebaseFirestore.instance
+                            .collection('notifications')
+                            .add({
+                              'userId': rideData['passengerId'],
+                              'title': 'Ride Cancelled ❌',
+                              'message':
+                                  'Your ride request was cancelled. Please try again.',
+                              'type': 'ride',
+                              'isRead': false,
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -247,7 +311,11 @@ class RideRequestScreen extends StatelessWidget {
                       icon: const Icon(Icons.close, color: whiteColor),
                       label: const Text(
                         'Reject',
-                        style: TextStyle(color: whiteColor, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
@@ -263,19 +331,123 @@ class RideRequestScreen extends StatelessWidget {
                   child: SizedBox(
                     height: 55,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Ride Accepted! Head to pickup location.'),
-                            backgroundColor: Colors.green,
+                      onPressed: () async {
+                        final otpController = TextEditingController();
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => AlertDialog(
+                            title: const Text(
+                              'Enter OTP',
+                              style: TextStyle(
+                                color: primaryBlue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Ask passenger for OTP to start ride',
+                                  style: TextStyle(
+                                    color: greyColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: otpController,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 4,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 8,
+                                    color: primaryBlue,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '----',
+                                    hintStyle: const TextStyle(
+                                      color: greyColor,
+                                    ),
+                                    filled: true,
+                                    fillColor: bgColor,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    counterText: '',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: greyColor),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  if (otpController.text ==
+                                      rideData['otp'].toString()) {
+                                    Navigator.pop(context);
+                                    final user =
+                                        FirebaseAuth.instance.currentUser;
+                                    // After status update
+                                    await FirebaseFirestore.instance
+                                        .collection('notifications')
+                                        .add({
+                                          'userId': rideData['passengerId'],
+                                          'title': 'Ride Accepted! 🚗',
+                                          'message':
+                                              'Your driver is on the way to pickup location.',
+                                          'type': 'ride',
+                                          'isRead': false,
+                                          'createdAt':
+                                              FieldValue.serverTimestamp(),
+                                        });
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Ride Accepted! OTP Verified ✅',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Wrong OTP! Try again.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryBlue,
+                                ),
+                                child: const Text(
+                                  'Verify',
+                                  style: TextStyle(color: whiteColor),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
                       icon: const Icon(Icons.check, color: whiteColor),
                       label: const Text(
                         'Accept',
-                        style: TextStyle(color: whiteColor, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: whiteColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -293,5 +465,4 @@ class RideRequestScreen extends StatelessWidget {
       ),
     );
   }
-
 }

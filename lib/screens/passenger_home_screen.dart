@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:swift_ride/screens/gemini_chat_screen.dart';
 import '../constants/colors.dart';
 import 'booking_screen.dart';
 import 'ride_history_screen.dart';
@@ -6,6 +7,9 @@ import 'profile_screen.dart';
 // import 'rider_home_screen.dart';
 // import 'user_selection_screen.dart';
 import '../widgets/passenger_drawer.dart';
+import 'gemini_chat_screen.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
@@ -20,6 +24,16 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: accentOrange,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const GeminiChatScreen()),
+          );
+        },
+        child: const Icon(Icons.smart_toy, color: whiteColor),
+      ),
       drawer: const PassengerDrawer(currentScreen: 'home'),
       body: _buildBody(),
     );
@@ -42,12 +56,26 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     return Stack(
       children: [
         // Full Map Background
-        SizedBox.expand(
-          child: Image.asset(
-            'assets/images/map.jpg',
-            fit: BoxFit.cover,
+        // Full Map Background
+        // Full Map Background
+SizedBox.expand(
+  child: kIsWeb
+      ? Image.asset(
+          'assets/images/map.jpg',
+          fit: BoxFit.cover,
+        )
+      : GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: LatLng(31.5204, 74.3587),
+            zoom: 13,
           ),
+          myLocationEnabled: true,
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          onMapCreated: (controller) {},
         ),
+),
 
         // Overlay
         Container(
@@ -69,7 +97,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
             children: [
               // Top Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -155,28 +186,23 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Good Morning! 👋',
-                        style: TextStyle(color: greyColor, fontSize: 13),
-                      ),
-                      const Text(
-                        'Where to, John?',
-                        style: TextStyle(
-                          color: primaryBlue,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BookingScreen(),
-                            ),
-                          );
-                        },
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return const BookingScreen();
+      },
+    ),
+  );
+},
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -192,7 +218,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                               SizedBox(width: 12),
                               Text(
                                 'Where do you want to go?',
-                                style: TextStyle(color: greyColor, fontSize: 15),
+                                style: TextStyle(
+                                  color: greyColor,
+                                  fontSize: 15,
+                                ),
                               ),
                             ],
                           ),
@@ -208,5 +237,4 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
       ],
     );
   }
-
 }

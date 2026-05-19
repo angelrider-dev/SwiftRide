@@ -1,0 +1,43 @@
+passenger->
+->gemini is not working
+->image is not showing in profile in laptop
+->payment method didnt update even after selected.is this even useable ? for biker as it will show to biker as he will give payment by cash or not?
+->what kind of notifications will appear here.
+->create a otp which will be given to both passenger and driver when they will book ride
+->my total rides, my rating(give me so i can change  it ) and pkr spend didnt change it profile 
+->add option for passenger to give review and rating to driver 
+->use a back option in ride history 
+-> dont show popup in passenger home screen when we will where do you want to go and it shows option for book a ride 
+->dont show booking screen page in full lenght. show it from bottom to top only 50% 
+->also add option to select location manually on booking screen
+->remove good morning and where do you want to go from passenger home screen
+->add option in drawer as if i click on my profile icon in drawer it will open my profile page
+
+SPLASH->
+->add supporting gmail on login screen
+->add starting page after splash screen
+->use a little short loading time in splash screen
+->use our new profile icon on splash screen in certer of where we put car 
+->also this on mobile app 
+->update forgot pasword code from login and signup page
+driver->
+
+->my earning screen not load properly. if its empty give empty message 
+->rides dont show up
+->add my reviews file and mamage it for my profile  page
+->i dont think edit profile is suitable but give a warning before editing it as it will effect on its rides 
+->only show rides to me of my type(if i use bike dont show me ries like car or rikshaw rides)
+->remove logout button from here 
+->give overall rating totally accoumdated from my rides 
+->manage total rides and pkr earned from rides for profile page
+->remove areas sides and get rides surrounding to me in 5 km in rider home screen
+->->image is not showing in profile in laptop
+->also show passenger paying method when he ask for rides
+->add option in drawer as if i click on my profile icon in drawer it will open my profile page
+->when driver want to go as a passenger it will let it go as it dont need any other equipment
+
+
+->show option if passenger dont have rider account then if he want ot create it or not
+->show same image of splash screen 
+->when i open app it shows me my current location on map
+->gimini api key 
