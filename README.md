@@ -1,17 +1,32 @@
-# swift_ride
+# SwiftRide 🚗
 
-A new Flutter project,
+A ride-booking mobile application built with Flutter, inspired by the core functionality of ride-hailing apps like inDrive — enabling users to book rides, track drivers, and manage trips in real time.
 
-## Getting Started
+## ✨ Features
 
-This project is a starting point for a Flutter application.
+- 🔐 User authentication and profile management
+- 📍 Real-time location tracking and map integration
+- 🗺️ Route mapping and navigation using map APIs
+- 🤖 AI-powered assistance integrated via Gemini API
+- 🔄 Real-time data sync with Firebase
+- 📱 Clean, responsive UI built with Flutter
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- **Framework:** Flutter (Dart)
+- **Backend / Database:** Firebase
+- **State Management:** Provider
+- **AI Integration:** Google Gemini API
+- **Maps & Location:** Map APIs for live tracking and route management
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 About the Project
+
+SwiftRide was built to explore how ride-hailing platforms handle real-time location tracking, route mapping, and AI-assisted features. It combines Flutter's cross-platform capabilities with Firebase's real-time backend and Gemini's AI features to create a functional ride-booking experience.
+
+## 📌 Status
+
+This project is a work in progress, built as part of ongoing learning in mobile app development and AI integration.
+
+## 📬 Contact
+
+Feel free to connect on [LinkedIn](https://www.linkedin.com/in/zohaib-safdar-39316741b/) for questions or collaboration.
